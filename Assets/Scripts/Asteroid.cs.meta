@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 68a13dec9f5e3f845b836be1add52f3c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - particleSystemObject: {instanceID: 0}
+  - fragments: {fileID: 684551398671764299, guid: 205c2fe5c3cfcb64092c5c445445e416,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

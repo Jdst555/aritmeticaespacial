@@ -142,7 +142,7 @@ public class GameManager : MonoBehaviour
         Vector2 respawnLocation = new Vector2(distance * Mathf.Cos(randomDirection), distance * Mathf.Sin(randomDirection));
         GameObject digitObject = Instantiate(digit, respawnLocation + (Vector2)player.transform.position, Quaternion.identity);
         digitObject.GetComponent<Digit>().SetDigit(intDigit);
-        Debug.Log("RESPAWN_DIGIT Respawn location: " + respawnLocation);
+        //Debug.Log("RESPAWN_DIGIT Respawn location: " + respawnLocation);
     }
     //provisional
     private void SpawnAsteroids(float dist, int num)

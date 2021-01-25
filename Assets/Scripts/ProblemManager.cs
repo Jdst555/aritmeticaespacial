@@ -35,8 +35,8 @@ public class ProblemManager
         else if (type == ProblemTypes.ADDITION)
         {
             int a, b, intSolution;
-            a = Random.Range(10, 70);
-            b = Random.Range(10, 70);
+            a = Random.Range(10, 50);
+            b = Random.Range(10, 50);
             intSolution = a + b;
             string strSolution = intSolution.ToString();
             string strProblem = string.Concat(a.ToString(), "+", b.ToString() + " =");

@@ -27,6 +27,8 @@ public class GameManager : MonoBehaviour
     private int digitPunish = -50;
     private int problemReward = 500;
     private int setOfProblemsReward = 1000;
+    private int problemsSolved = 0;
+    private List<Problem> listProblemsSolved = new List<Problem>();
     
     private void Awake()
     {
@@ -186,6 +188,8 @@ public class GameManager : MonoBehaviour
             Debug.Log("GOOD_DIGIT_FOUND. Empty Queue. Problem Solved");
             RewardProblemSolved();
             StartCoroutine("SetLastGoodDigit", provisionalOldDigitToFind);
+            problemsSolved += 1;
+            listProblemsSolved.Add(problemManager.GetCurrentProblem());
         }
         
     }

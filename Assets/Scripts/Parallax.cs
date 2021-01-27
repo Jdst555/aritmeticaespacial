@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//Controla velocidad de paralaje de las diferentes capas del fondo
 public class Parallax : MonoBehaviour
 {
-    // Start is called before the first frame update
-    private Camera camera;
+    
+    
     public float parallax = 0.5f;
     private float textureUnits;
     private Texture texture;
@@ -16,34 +18,24 @@ public class Parallax : MonoBehaviour
 
     void Start()
     {
-        camera = Camera.main;
+        
         if (GetComponent<SpriteRenderer>() != null)
         {
-            sprite = GetComponent<SpriteRenderer>().sprite;
-            texture = sprite.texture;
-            pixelPerUnit = sprite.pixelsPerUnit;
-            textureUnits = texture.width / pixelPerUnit;
+            sprite = GetComponent<SpriteRenderer>().sprite;//el SpriteRenderer asociado a este objeto
+            texture = sprite.texture;//la textura del Sprite
+            pixelPerUnit = sprite.pixelsPerUnit;//cuantos pixeles de hacen una unidad
+            textureUnits = texture.width / pixelPerUnit;//cuantas unidades tiene la textura (ancho y alto son iguales)
         }
-        
-       
-        
-        
     }
-
-    private void Update()
-    {
-        
-    }
-
 
     private void LateUpdate()
     {
        
-        Vector3 cameraDeltaPosition = camera.GetComponent<Follow>().deltaPosition;
+        Vector3 cameraDeltaPosition = Camera.main.GetComponent<Follow>().deltaPosition;
         transform.Translate(cameraDeltaPosition * parallax);
 
         //saltar BG en eje X y Y
-        cameraPosition = camera.transform.position;
+        cameraPosition = Camera.main.transform.position;
         float deltaX = cameraPosition.x - transform.position.x;
         float deltaY = cameraPosition.y - transform.position.y;
         if (deltaX >= textureUnits * jumpFactor)

@@ -9,6 +9,7 @@ TagManager:
   - Asteroid
   - Enemy
   - Digit
+  - Health
   layers:
   - Default
   - TransparentFX

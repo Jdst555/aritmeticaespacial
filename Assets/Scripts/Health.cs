@@ -18,4 +18,12 @@ public class Health : MonoBehaviour
         healthBar.SetHealth(curHealth);
         
     }
+    public void HealPlayer(int healingValue)
+    {
+        curHealth += healingValue;
+        if (curHealth > maxHealth)
+            curHealth = maxHealth;
+        healthBar.SetHealth(curHealth);
+
+    }
 }

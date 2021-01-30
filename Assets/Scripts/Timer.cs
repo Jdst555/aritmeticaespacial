@@ -43,9 +43,11 @@ public class Timer : MonoBehaviour
     }
     public void StartTimer(float period)
     {
+        
         ResetTimer();
         this.period = period;
         isOn = true;
+        Debug.Log("TIMER/START_TIMER period: " + period);
     }
     public void PauseUnpauseTimer()
     {

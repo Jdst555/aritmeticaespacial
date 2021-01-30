@@ -21,6 +21,7 @@ public class Player : MonoBehaviour
     private AudioSource shootAudioSource;
     public AudioClip goodDigitSound;
     public AudioClip badDigitSound;
+    public AudioClip healthBoostSound;
     private float hMov;
     private float vMov;
     private Rigidbody2D rb;
@@ -71,7 +72,8 @@ public class Player : MonoBehaviour
         //obtener input del jugador
         if (isAlive)
         {
-            hMov = Input.GetAxisRaw("Horizontal");
+            hMov = Input.GetAxis("Horizontal");
+            //hMov = Input.GetAxisRaw("Horizontal");
             vMov = Mathf.Clamp(Input.GetAxisRaw("Vertical"), 0, 1);
             //instanciar disparo si se preciona shift
             if (Input.GetKeyDown(KeyCode.LeftShift))
@@ -127,6 +129,7 @@ public class Player : MonoBehaviour
             }
             //que hacer cuando captura un digito equivocado
             else {
+                GetComponent<Health>().DamagePlayer(7);
                 OnBadDigitFound?.Invoke();
                 audioSources[2].clip = badDigitSound;
                 audioSources[2].Play();
@@ -136,9 +139,16 @@ public class Player : MonoBehaviour
         }
         if (collision.tag == "Projectile")
         {
-            GetComponent<Health>().DamagePlayer(10);
+            GetComponent<Health>().DamagePlayer(7);
             Destroy(collision.gameObject);
             Instantiate(fragments, transform.position, Quaternion.identity);
+        }
+        if (collision.tag == "Health")
+        {
+            GetComponent<Health>().HealPlayer(collision.GetComponent<HealthBoost>().healingValue);
+            audioSources[2].clip = healthBoostSound;
+            audioSources[2].Play();
+            Destroy(collision.gameObject);
         }
     }
     //movimiento del jugador
@@ -183,7 +193,7 @@ public class Player : MonoBehaviour
     }
 
     //corutina de destruccion del jugador. (el gameObject "player" NO es destruido, solo desabilitado los elementos graficos)
-    private IEnumerator playerDestructionSequence()
+    public IEnumerator playerDestructionSequence()
     {
         //instanciar explosion
         Instantiate(playerExplosion, transform.position, Quaternion.identity);

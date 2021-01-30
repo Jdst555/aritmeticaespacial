@@ -10,34 +10,49 @@ public class GameManager : MonoBehaviour
     public GameObject player;
     public int currentPlayerScore = 0;
     public GameObject digit;//objeto
-    
+    public GameObject enemy;
     public GameObject[] asteroids;
     public GameObject bonusObject;
-    public GameObject timer;
+    public Timer timer;
+    public GameObject healthBoost;
     public Transform digitAnimationTarget;
     public GameObject animationDigit;
     public ProblemUI problemUI;
+    public AudioClip enemyExplosionSound;
+    public float enemySpawnInterval = 5;
+    public float problemsSetTime = 5;
+    public int problemSetSize = 5;
+    public GameObject timeOverText;
     private GameObject mainUI; //objeto que contiene la interface principal durante el juego
     private TextMeshProUGUI scoreTMP;
     private int numberOfDigits;
-    private float problemTime = 70;
+    
     private bool gameIsPaused;
     private ProblemManager problemManager;
-    private int digitReward = 200;
+    private int enemyDestroyBonus = 50;
+    private int digitReward = 100;
     private int digitPunish = -50;
     private int problemReward = 500;
-    private int setOfProblemsReward = 1000;
+    
     private int problemsSolved = 0;
     private List<Problem> listProblemsSolved = new List<Problem>();
-    
+    private int healingValue = 33;
+    private AudioSource audioSource;
+    private float lastEnemySpawnTime = 0;
+    private List<GameObject> enemiesList = new List<GameObject>();
+    private float timeAcc = 0;
+    private bool running = false;
     private void Awake()
     {
+        audioSource = GetComponent<AudioSource>();
         problemManager = new ProblemManager();
+        
         player = GameObject.FindGameObjectWithTag("Player");
         Player.OnPlayerDie += GameOverSequence;//asignar metodo GameOverSequence a evento OnPlayerDie ***(delegate)***
         Player.OnGoodDigitFound += GoodDigitFound;
         Player.OnBadDigitFound += BadDigitFound;
         Timer.OnTimeOver += TimeOverAction;
+        Enemy.OnEnemyDestroyEvent += EnemyDestroySequence;
         mainUI = GameObject.Find("MainUI");
         scoreTMP = GameObject.Find("Score text").GetComponent<TextMeshProUGUI>();//accede al componente TMP "scoreText" que contiene el UI del puntaje
 
@@ -47,40 +62,66 @@ public class GameManager : MonoBehaviour
         SpawnAsteroids(10, 10);//provisional
         SpawnObjects(5);//prov
         UpdatePlayerScore(0);
-        gameIsPaused = false; 
+        gameIsPaused = false;
+        timer.StartTimer(problemsSetTime);
+        SetOfProblemsText(0, problemSetSize);
+        
     }
     // Update is called once per frame
     void Update()
     {
-        
-        if (Input.GetKeyDown(KeyCode.P))
+        if (!running)
         {
-            //Debug.Log("UDATE. call TogglePauseGame");
-            TogglePauseGame();
-        }
-
-        if (problemManager.GetCurrentProblem() == null)
-        {
-            numberOfDigits = problemManager.MakeProblem((ProblemTypes)Random.Range(0, 2));
-            problemUI.ShowProblem(problemManager.GetCurrentProblem().strProblem, numberOfDigits);
+            ShowInstructions();
         }
         
-        if (problemManager.GetCurrentProblem().isSolved)
+        timeAcc += Time.deltaTime;
+        if (running)
         {
-            numberOfDigits = problemManager.MakeProblem((ProblemTypes)Random.Range(0, 2));
-            problemUI.ShowProblem(problemManager.GetCurrentProblem().strProblem, numberOfDigits);
-        }
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                Exit();
+            }
 
-        /*
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            timer.GetComponent<Timer>().StartTimer(problemTime);
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                //Debug.Log("UDATE. call TogglePauseGame");
+                TogglePauseGame();
+            }
+
+            if (problemManager.GetCurrentProblem() == null)
+            {
+                numberOfDigits = problemManager.MakeProblem((ProblemTypes)Random.Range(0, 2));
+                problemUI.ShowProblem(problemManager.GetCurrentProblem().strProblem, numberOfDigits);
+            }
+
+            if (problemManager.GetCurrentProblem().isSolved)
+            {
+                numberOfDigits = problemManager.MakeProblem((ProblemTypes)Random.Range(0, 2));
+                problemUI.ShowProblem(problemManager.GetCurrentProblem().strProblem, numberOfDigits);
+            }
+            if (problemsSolved == problemSetSize)
+            {
+                VictorySequence();
+            }
+
+            if (timeAcc - lastEnemySpawnTime > enemySpawnInterval)
+            {
+                for (int i = 0; i < 1; i++)
+                {
+
+                    float randomDirection = Random.Range(0f, 360f);
+                    randomDirection *= Mathf.Deg2Rad;
+                    float distance = Random.Range(12, 16);
+                    Vector2 spawnPosition = new Vector2(distance * Mathf.Cos(randomDirection), distance * Mathf.Sin(randomDirection));
+                    spawnPosition += (Vector2)player.transform.position;
+                    SpawnEnemy(spawnPosition, ((Vector2)player.transform.position - spawnPosition).normalized);
+                    lastEnemySpawnTime = timeAcc;
+                }
+
+            }
         }
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            timer.GetComponent<Timer>().PauseUnpauseTimer();
-        }
-        */
+        
     }
     private void OnDisable()
     {
@@ -88,8 +129,14 @@ public class GameManager : MonoBehaviour
         Player.OnGoodDigitFound -= GoodDigitFound;
         Player.OnBadDigitFound -= BadDigitFound;
         Timer.OnTimeOver -= TimeOverAction;
+        Enemy.OnEnemyDestroyEvent -= EnemyDestroySequence;
     }
-
+    public void SpawnEnemy(Vector3 spawnPosition, Vector2 spawnRotation)
+    {
+ 
+        GameObject thisEnemyInstance = Instantiate(enemy, spawnPosition, Quaternion.Euler(spawnRotation));
+        enemiesList.Add(thisEnemyInstance);
+    }
     //provisional
     private void SpawnObjects(int modulo)
     {
@@ -170,8 +217,18 @@ public class GameManager : MonoBehaviour
    
     private void GameOverSequence()
     {
-        GameObject gameOverCanvas = mainUI.transform.Find("GameOverCanvas").gameObject;
+        GameObject gameOverCanvas = GameObject.Find("MainUI").transform.Find("GameOverCanvas").gameObject;
         gameOverCanvas.SetActive(true);
+        GameObject.Find("Final score").GetComponent<TextMeshProUGUI>().SetText(currentPlayerScore.ToString());
+    }
+    private void VictorySequence()
+    {
+        Time.timeScale = 0;
+        int score = currentPlayerScore;
+        scoreTMP.SetText(string.Format("Puntos: \n{0,4:D6}", score));
+        GameObject victoryCanvas = GameObject.Find("MainUI").transform.Find("VictoryCanvas").gameObject;
+        victoryCanvas.SetActive(true);
+        victoryCanvas.transform.Find("Final score").GetComponent<TextMeshProUGUI>().SetText(currentPlayerScore.ToString());
     }
     private void GoodDigitFound()
     {
@@ -190,6 +247,7 @@ public class GameManager : MonoBehaviour
             StartCoroutine("SetLastGoodDigit", provisionalOldDigitToFind);
             problemsSolved += 1;
             listProblemsSolved.Add(problemManager.GetCurrentProblem());
+            SetOfProblemsText(problemsSolved, problemSetSize);
         }
         
     }
@@ -227,7 +285,10 @@ public class GameManager : MonoBehaviour
         //llamar a la animacion de puntaje obtenido
         InstantiateCaptureAnimation(player.transform, scoreIncrementDecrement);
     }
-    
+    private void SetOfProblemsText(int numberOfProblemsSolved, int setOfProblemsSize)
+    {
+        GameObject.Find("Problems set text").GetComponent<TextMeshProUGUI>().SetText(string.Format("{0} de {1} resueltos", numberOfProblemsSolved, setOfProblemsSize));
+    }
     //actualiza y muestra en la UI el puntaje actual
     private void UpdateCurrentScoreUI()
     {
@@ -287,13 +348,43 @@ public class GameManager : MonoBehaviour
             tmp.SetText(amount.ToString());
             Destroy(anim, 2);
         }
+    }
+    private void EnemyDestroySequence(Transform enemyTransform)
+    {
         
+        GameObject healthBoostGameObjectInstance = Instantiate(healthBoost, enemyTransform.position, Quaternion.identity);
+        healthBoostGameObjectInstance.GetComponent<HealthBoost>().healingValue = healingValue;
+        UpdatePlayerScore(enemyDestroyBonus);
+        audioSource.clip = enemyExplosionSound;
+        audioSource.Play();
+        //InstantiateCaptureAnimation(enemyTransform, enemyDestroyBonus);
+
+
 
 
     }
     private void TimeOverAction()
     {
+        player.GetComponent<Player>().StartCoroutine("playerDestructionSequence");
+        GameOverSequence();
+        timeOverText.SetActive(true);
+    }
 
+    private void ShowInstructions()
+    {
+        
+        Time.timeScale = 0;
+        GameObject instructionsCanvas = GameObject.Find("MainUI").transform.Find("Instructions canvas").gameObject;
+        instructionsCanvas.SetActive(true);
+        
+        
+        running = Input.anyKeyDown;
+        if (running)
+        {
+            instructionsCanvas.SetActive(false);
+            Time.timeScale = 1;
+        }
+        
     }
     public void Restart()
     {
@@ -320,5 +411,8 @@ public class GameManager : MonoBehaviour
         }
         
     }
-    private void Exit() { }
+    private void Exit()
+    {
+        Application.Quit();
+    }
 }
